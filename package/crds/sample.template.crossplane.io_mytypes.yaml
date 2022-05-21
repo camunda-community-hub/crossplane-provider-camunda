@@ -64,10 +64,13 @@ spec:
               forProvider:
                 description: MyTypeParameters are the configurable fields of a MyType.
                 properties:
-                  configurableField:
+                  plan:
+                    type: string
+                  region:
                     type: string
                 required:
-                - configurableField
+                - plan
+                - region
                 type: object
               providerConfigRef:
                 default:

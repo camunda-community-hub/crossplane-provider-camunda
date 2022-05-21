@@ -27,7 +27,10 @@ import (
 
 // MyTypeParameters are the configurable fields of a MyType.
 type MyTypeParameters struct {
-	ConfigurableField string `json:"configurableField"`
+	Name       string `json:"name"`
+	Channel    string `json:"channel"`
+	Generation string `json:"generation"`
+	Region     string `json:"region"`
 }
 
 // MyTypeObservation are the observable fields of a MyType.

@@ -48,9 +48,11 @@ const (
 
 // A NoOpService does nothing.
 type NoOpService struct{}
+type CamundaService struct{}
 
 var (
 	newNoOpService = func(_ []byte) (interface{}, error) { return &NoOpService{}, nil }
+	camundaService = func(_ []byte) (interface{}, error) { return &CamundaService{}, nil }
 )
 
 // Setup adds a controller that reconciles MyType managed resources.
