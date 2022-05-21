@@ -20,8 +20,8 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/crossplane/provider-template/internal/controller/config"
-	"github.com/crossplane/provider-template/internal/controller/mytype"
+	"github.com/crossplane/provider-camunda/internal/controller/config"
+	"github.com/crossplane/provider-camunda/internal/controller/mytype"
 )
 
 // Setup creates all Template controllers with the supplied logger and adds them to

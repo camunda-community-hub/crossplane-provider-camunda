@@ -32,9 +32,9 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
-	"github.com/crossplane/provider-template/apis/sample/v1alpha1"
-	apisv1alpha1 "github.com/crossplane/provider-template/apis/v1alpha1"
-	"github.com/crossplane/provider-template/internal/controller/features"
+	"github.com/crossplane/provider-camunda/apis/sample/v1alpha1"
+	apisv1alpha1 "github.com/crossplane/provider-camunda/apis/v1alpha1"
+	"github.com/crossplane/provider-camunda/internal/controller/features"
 )
 
 const (
