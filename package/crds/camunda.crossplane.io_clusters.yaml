@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: clusters.cluster.camunda.crossplane.io
+  name: clusters.camunda.crossplane.io
 spec:
-  group: cluster.camunda.crossplane.io
+  group: camunda.crossplane.io
   names:
     categories:
     - crossplane
@@ -67,8 +67,6 @@ spec:
                     type: string
                   generation:
                     type: string
-                  name:
-                    type: string
                   planType:
                     type: string
                   region:
@@ -76,7 +74,6 @@ spec:
                 required:
                 - channel
                 - generation
-                - name
                 - planType
                 - region
                 type: object

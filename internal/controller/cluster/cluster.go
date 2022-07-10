@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	errNotMyType    = "managed resource is not a MyType custom resource"
+	errNotMyType    = "managed resource is not a cluster custom resource"
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
@@ -167,7 +167,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotMyType)
 	}
 
-	clusterName := cr.Spec.ForProvider.Name
+	clusterName := cr.GetName()
 
 	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.accessToken)
 	inline, _, err := c.service.APIClient.ClustersApi.GetCluster(ctx, meta.GetExternalName(cr)).Execute()
@@ -178,7 +178,30 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, nil
 	}
 
-	cr.Status.SetConditions(xpv1.Available())
+	fmt.Println("cluster status", inline.Status)
+	fmt.Println("cluster links", inline.Links)
+
+	if inline.Status.ZeebeStatus != nil {
+		switch *inline.Status.ZeebeStatus {
+		case console.HEALTHY:
+			cr.Status.SetConditions(xpv1.Available())
+		case console.CREATING:
+			cr.Status.SetConditions(xpv1.Creating())
+		default:
+			cr.Status.SetConditions(xpv1.Unavailable())
+		}
+
+	}
+
+	connectionDetails := managed.ConnectionDetails{}
+	// TODO: Proper check of all nil-pointers
+	if inline.Links.Operate != nil {
+		connectionDetails["operate"] = []byte(*inline.Links.Operate)
+		connectionDetails["optimize"] = []byte(*inline.Links.Optimize)
+		connectionDetails["tasklist"] = []byte(*inline.Links.Tasklist)
+		connectionDetails["zeebe"] = []byte(*inline.Links.Zeebe)
+	}
+
 	return managed.ExternalObservation{
 		// Return false when the external resource does not exist. This lets
 		// the managed resource reconciler know that it needs to call Create to
@@ -192,7 +215,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 		// Return any details that may be required to connect to the external
 		// resource. These will be stored as the connection secret.
-		ConnectionDetails: managed.ConnectionDetails{},
+		ConnectionDetails: connectionDetails,
 	}, nil
 }
 
@@ -203,7 +226,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 
 	newClusterConfiguration := console.CreateClusterBody{
-		Name:         cr.Spec.ForProvider.Name,
+		Name:         cr.GetName(),
 		PlanTypeId:   cr.Spec.ForProvider.PlanType,
 		ChannelId:    cr.Spec.ForProvider.Channel,
 		GenerationId: cr.Spec.ForProvider.Generation,
