@@ -5,18 +5,18 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: mytypes.sample.template.crossplane.io
+  name: clusters.cluster.camunda.crossplane.io
 spec:
-  group: sample.template.crossplane.io
+  group: cluster.camunda.crossplane.io
   names:
     categories:
     - crossplane
     - managed
-    - template
-    kind: MyType
-    listKind: MyTypeList
-    plural: mytypes
-    singular: mytype
+    - camunda
+    kind: Cluster
+    listKind: ClusterList
+    plural: clusters
+    singular: cluster
   scope: Cluster
   versions:
   - additionalPrinterColumns:
@@ -35,7 +35,6 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A MyType is an example API type.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -50,7 +49,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: A MyTypeSpec defines the desired state of a MyType.
+            description: A ClusterSpec defines the desired state of a Cluster.
             properties:
               deletionPolicy:
                 default: Delete
@@ -62,14 +61,23 @@ spec:
                 - Delete
                 type: string
               forProvider:
-                description: MyTypeParameters are the configurable fields of a MyType.
+                description: ClusterParameters are the configurable fields of a Cluster.
                 properties:
-                  plan:
+                  channel:
+                    type: string
+                  generation:
+                    type: string
+                  name:
+                    type: string
+                  planType:
                     type: string
                   region:
                     type: string
                 required:
-                - plan
+                - channel
+                - generation
+                - name
+                - planType
                 - region
                 type: object
               providerConfigRef:
@@ -169,10 +177,10 @@ spec:
             - forProvider
             type: object
           status:
-            description: A MyTypeStatus represents the observed state of a MyType.
+            description: A ClusterStatus represents the observed state of a Cluster.
             properties:
               atProvider:
-                description: MyTypeObservation are the observable fields of a MyType.
+                description: ClusterObservation are the observable fields of a Cluster.
                 properties:
                   observableField:
                     type: string

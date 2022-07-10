@@ -14,13 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package mytype
+package cluster
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/url"
 
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/pkg/meta"
 	"github.com/pkg/errors"
+	"golang.org/x/oauth2/clientcredentials"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,9 +37,10 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
-	"github.com/crossplane/provider-camunda/apis/sample/v1alpha1"
+	"github.com/crossplane/provider-camunda/apis/cluster/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-camunda/apis/v1alpha1"
 	"github.com/crossplane/provider-camunda/internal/controller/features"
+	console "github.com/sijoma/console-customer-api-go"
 )
 
 const (
@@ -46,18 +52,44 @@ const (
 	errNewClient = "cannot create new Service"
 )
 
-// A NoOpService does nothing.
-type NoOpService struct{}
-type CamundaService struct{}
+// CamundaService connects to Camunda Cloud
+type CamundaService struct {
+	console.APIClient
+	accessToken string
+}
 
 var (
-	newNoOpService = func(_ []byte) (interface{}, error) { return &NoOpService{}, nil }
-	camundaService = func(_ []byte) (interface{}, error) { return &CamundaService{}, nil }
+	camundaService = func(ctx context.Context, creds []byte) (*CamundaService, error) {
+		camundaCreds := map[string]string{}
+		if err := json.Unmarshal(creds, &camundaCreds); err != nil {
+			return nil, err
+		}
+		config := clientcredentials.Config{
+			ClientID:     camundaCreds["client_id"],
+			ClientSecret: camundaCreds["client_secret"],
+			TokenURL:     "https://login.cloud.camunda.io/oauth/token",
+			EndpointParams: url.Values{
+				"audience": []string{"api.cloud.camunda.io"},
+			},
+		}
+		token, err := config.Token(ctx)
+		if err != nil {
+			fmt.Println("unable to fetch token" + err.Error())
+			return nil, err
+		}
+
+		cfg := console.NewConfiguration()
+		cfg.Scheme = "https"
+		cfg.Host = "api.cloud.camunda.io"
+		client := console.NewAPIClient(cfg)
+
+		return &CamundaService{*client, token.AccessToken}, nil
+	}
 )
 
 // Setup adds a controller that reconciles MyType managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(v1alpha1.MyTypeGroupKind)
+	name := managed.ControllerName(v1alpha1.ClusterGroupKind)
 
 	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
 	if o.Features.Enabled(features.EnableAlphaExternalSecretStores) {
@@ -65,11 +97,11 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.MyTypeGroupVersionKind),
+		resource.ManagedKind(v1alpha1.ClusterGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
-			newServiceFn: newNoOpService}),
+			newServiceFn: camundaService}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))),
 		managed.WithConnectionPublishers(cps...))
@@ -77,7 +109,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
-		For(&v1alpha1.MyType{}).
+		For(&v1alpha1.Cluster{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -86,7 +118,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 type connector struct {
 	kube         client.Client
 	usage        resource.Tracker
-	newServiceFn func(creds []byte) (interface{}, error)
+	newServiceFn func(ctx context.Context, creds []byte) (*CamundaService, error)
 }
 
 // Connect typically produces an ExternalClient by:
@@ -95,7 +127,7 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*v1alpha1.MyType)
+	cr, ok := mg.(*v1alpha1.Cluster)
 	if !ok {
 		return nil, errors.New(errNotMyType)
 	}
@@ -115,7 +147,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.Wrap(err, errGetCreds)
 	}
 
-	svc, err := c.newServiceFn(data)
+	svc, err := c.newServiceFn(ctx, data)
 	if err != nil {
 		return nil, errors.Wrap(err, errNewClient)
 	}
@@ -126,20 +158,27 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 // An ExternalClient observes, then either creates, updates, or deletes an
 // external resource to ensure it reflects the managed resource's desired state.
 type external struct {
-	// A 'client' used to connect to the external resource API. In practice this
-	// would be something like an AWS SDK client.
-	service interface{}
+	service *CamundaService
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.MyType)
+	cr, ok := mg.(*v1alpha1.Cluster)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotMyType)
 	}
 
-	// These fmt statements should be removed in the real implementation.
-	fmt.Printf("Observing: %+v", cr)
+	clusterName := cr.Spec.ForProvider.Name
 
+	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.accessToken)
+	inline, _, err := c.service.APIClient.ClustersApi.GetCluster(ctx, meta.GetExternalName(cr)).Execute()
+	if err != nil {
+		return managed.ExternalObservation{
+			ResourceExists:   false,
+			ResourceUpToDate: false,
+		}, nil
+	}
+
+	cr.Status.SetConditions(xpv1.Available())
 	return managed.ExternalObservation{
 		// Return false when the external resource does not exist. This lets
 		// the managed resource reconciler know that it needs to call Create to
@@ -149,7 +188,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		// Return false when the external resource exists, but it not up to date
 		// with the desired managed resource state. This lets the managed
 		// resource reconciler know that it needs to call Update.
-		ResourceUpToDate: true,
+		ResourceUpToDate: inline.Name == clusterName,
 
 		// Return any details that may be required to connect to the external
 		// resource. These will be stored as the connection secret.
@@ -158,12 +197,29 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.MyType)
+	cr, ok := mg.(*v1alpha1.Cluster)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotMyType)
 	}
 
-	fmt.Printf("Creating: %+v", cr)
+	newClusterConfiguration := console.CreateClusterBody{
+		Name:         cr.Spec.ForProvider.Name,
+		PlanTypeId:   cr.Spec.ForProvider.PlanType,
+		ChannelId:    cr.Spec.ForProvider.Channel,
+		GenerationId: cr.Spec.ForProvider.Generation,
+		RegionId:     cr.Spec.ForProvider.Region,
+	}
+	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.accessToken)
+	inline, _, err := c.service.APIClient.ClustersApi.CreateCluster(ctx).
+		CreateClusterBody(newClusterConfiguration).
+		Execute()
+
+	if err != nil {
+		fmt.Println("the error", string(err.(*console.GenericOpenAPIError).Body()))
+		return managed.ExternalCreation{}, err
+	}
+
+	meta.SetExternalName(cr, inline.GetClusterId())
 
 	return managed.ExternalCreation{
 		// Optionally return any details that may be required to connect to the
@@ -173,7 +229,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.MyType)
+	cr, ok := mg.(*v1alpha1.Cluster)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotMyType)
 	}
@@ -188,12 +244,20 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
-	cr, ok := mg.(*v1alpha1.MyType)
+	cr, ok := mg.(*v1alpha1.Cluster)
 	if !ok {
 		return errors.New(errNotMyType)
 	}
 
 	fmt.Printf("Deleting: %+v", cr)
+
+	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.accessToken)
+	resp, err := c.service.APIClient.ClustersApi.DeleteCluster(ctx, meta.GetExternalName(cr)).Execute()
+
+	if err != nil {
+		fmt.Println("the resp", resp)
+		fmt.Println("the error", string(err.(*console.GenericOpenAPIError).Body()))
+	}
 
 	return nil
 }

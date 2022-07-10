@@ -5,14 +5,14 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: providerconfigusages.template.crossplane.io
+  name: providerconfigusages.camunda.crossplane.io
 spec:
-  group: template.crossplane.io
+  group: camunda.crossplane.io
   names:
     categories:
     - crossplane
     - provider
-    - template
+    - camunda
     kind: ProviderConfigUsage
     listKind: ProviderConfigUsageList
     plural: providerconfigusages

@@ -1,0 +1,14 @@
+apiVersion: cluster.camunda.crossplane.io/v1alpha1
+kind: Cluster
+metadata:
+  name: my-camunda-cluster-123
+spec:
+  forProvider:
+    name: "myClusterCrossplane"
+    channel: c767585c-eccc-4762-be78-3bfcd562ee1e
+    generation: "c1f79896-8d0c-41d0-b8c5-0175157d32de"
+    planType: "231932af-0223-4b60-9961-fe4f71800760" # Trial Package
+    region: "2f6470f9-77ec-4be5-9cdc-3231caf683ec"  # Europe West
+
+  providerConfigRef:
+    name: example

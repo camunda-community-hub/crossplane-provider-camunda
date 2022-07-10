@@ -14,21 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package apis contains Kubernetes API for the Template provider.
+// Package apis contains Kubernetes API for the Camunda provider.
 package apis
 
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
-	samplev1alpha1 "github.com/crossplane/provider-camunda/apis/sample/v1alpha1"
-	templatev1alpha1 "github.com/crossplane/provider-camunda/apis/v1alpha1"
+	clusterv1alpha1 "github.com/crossplane/provider-camunda/apis/cluster/v1alpha1"
+	camundav1alpha1 "github.com/crossplane/provider-camunda/apis/v1alpha1"
 )
 
 func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	AddToSchemes = append(AddToSchemes,
-		templatev1alpha1.SchemeBuilder.AddToScheme,
-		samplev1alpha1.SchemeBuilder.AddToScheme,
+		camundav1alpha1.SchemeBuilder.AddToScheme,
+		clusterv1alpha1.SchemeBuilder.AddToScheme,
 	)
 }
 
