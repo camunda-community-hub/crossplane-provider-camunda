@@ -25,6 +25,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
 	"github.com/pkg/errors"
+	console "github.com/sijoma/console-customer-api-go"
 	"golang.org/x/oauth2/clientcredentials"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -40,7 +41,6 @@ import (
 	"github.com/crossplane/provider-camunda/apis/cluster/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-camunda/apis/v1alpha1"
 	"github.com/crossplane/provider-camunda/internal/controller/features"
-	console "github.com/sijoma/console-customer-api-go"
 )
 
 const (
@@ -187,6 +187,8 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			cr.Status.SetConditions(xpv1.Available())
 		case console.CREATING:
 			cr.Status.SetConditions(xpv1.Creating())
+		case console.UNHEALTHY, console.UPDATING:
+			cr.Status.SetConditions(xpv1.Unavailable())
 		default:
 			cr.Status.SetConditions(xpv1.Unavailable())
 		}

@@ -35,6 +35,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
+        description: Cluster Camunda 8 Platform SaaS Cluster
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
