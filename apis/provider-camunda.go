@@ -20,6 +20,7 @@ package apis
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
+	clientsv1alpha1 "github.com/crossplane/provider-camunda/apis/client/v1alpha1"
 	clusterv1alpha1 "github.com/crossplane/provider-camunda/apis/cluster/v1alpha1"
 	camundav1alpha1 "github.com/crossplane/provider-camunda/apis/v1alpha1"
 )
@@ -29,6 +30,7 @@ func init() {
 	AddToSchemes = append(AddToSchemes,
 		camundav1alpha1.SchemeBuilder.AddToScheme,
 		clusterv1alpha1.SchemeBuilder.AddToScheme,
+		clientsv1alpha1.SchemeBuilder.AddToScheme,
 	)
 }
 

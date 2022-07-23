@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Crossplane Authors.
+Copyright 2022 The Crossplane Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package client
 
 import (
 	"context"
 	"fmt"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
 	"github.com/pkg/errors"
-	console "github.com/sijoma/console-customer-api-go"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,13 +34,13 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
-	"github.com/crossplane/provider-camunda/apis/cluster/v1alpha1"
+	"github.com/crossplane/provider-camunda/apis/client/v1alpha1"
 	apisv1alpha1 "github.com/crossplane/provider-camunda/apis/v1alpha1"
 	"github.com/crossplane/provider-camunda/internal/controller/features"
 )
 
 const (
-	errNotMyType    = "managed resource is not a cluster custom resource"
+	errNotclient    = "managed resource is not a client custom resource"
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
@@ -51,9 +48,9 @@ const (
 	errNewClient = "cannot create new Service"
 )
 
-// Setup adds a controller that reconciles MyType managed resources.
+// Setup adds a controller that reconciles client managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(v1alpha1.ClusterGroupKind)
+	name := managed.ControllerName(v1alpha1.ClientGroupKind)
 
 	cps := []managed.ConnectionPublisher{managed.NewAPISecretPublisher(mgr.GetClient(), mgr.GetScheme())}
 	if o.Features.Enabled(features.EnableAlphaExternalSecretStores) {
@@ -61,7 +58,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.ClusterGroupVersionKind),
+		resource.ManagedKind(v1alpha1.ClientGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.NewProviderConfigUsageTracker(mgr.GetClient(), &apisv1alpha1.ProviderConfigUsage{}),
@@ -73,7 +70,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
-		For(&v1alpha1.Cluster{}).
+		For(&v1alpha1.Client{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -91,9 +88,9 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*v1alpha1.Cluster)
+	cr, ok := mg.(*v1alpha1.Client)
 	if !ok {
-		return nil, errors.New(errNotMyType)
+		return nil, errors.New(errNotclient)
 	}
 
 	if err := c.usage.Track(ctx, mg); err != nil {
@@ -122,51 +119,19 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 // An ExternalClient observes, then either creates, updates, or deletes an
 // external resource to ensure it reflects the managed resource's desired state.
 type external struct {
+	// A 'client' used to connect to the external resource API. In practice this
+	// would be something like an AWS SDK client.
 	service *camunda.Service
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Cluster)
+	cr, ok := mg.(*v1alpha1.Client)
 	if !ok {
-		return managed.ExternalObservation{}, errors.New(errNotMyType)
+		return managed.ExternalObservation{}, errors.New(errNotclient)
 	}
 
-	clusterName := cr.GetName()
-
-	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
-	inline, _, err := c.service.APIClient.ClustersApi.GetCluster(ctx, meta.GetExternalName(cr)).Execute()
-	if err != nil {
-		return managed.ExternalObservation{
-			ResourceExists:   false,
-			ResourceUpToDate: false,
-		}, nil
-	}
-
-	fmt.Println("cluster status", inline.Status)
-	fmt.Println("cluster links", inline.Links)
-
-	if inline.Status.ZeebeStatus != nil {
-		switch *inline.Status.ZeebeStatus {
-		case console.HEALTHY:
-			cr.Status.SetConditions(xpv1.Available())
-		case console.CREATING:
-			cr.Status.SetConditions(xpv1.Creating())
-		case console.UNHEALTHY, console.UPDATING:
-			cr.Status.SetConditions(xpv1.Unavailable())
-		default:
-			cr.Status.SetConditions(xpv1.Unavailable())
-		}
-
-	}
-
-	connectionDetails := managed.ConnectionDetails{}
-	// TODO: Proper check of all nil-pointers
-	if inline.Links.Operate != nil {
-		connectionDetails["operate"] = []byte(*inline.Links.Operate)
-		connectionDetails["optimize"] = []byte(*inline.Links.Optimize)
-		connectionDetails["tasklist"] = []byte(*inline.Links.Tasklist)
-		connectionDetails["zeebe"] = []byte(*inline.Links.Zeebe)
-	}
+	// These fmt statements should be removed in the real implementation.
+	fmt.Printf("Observing: %+v", cr)
 
 	return managed.ExternalObservation{
 		// Return false when the external resource does not exist. This lets
@@ -177,38 +142,21 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		// Return false when the external resource exists, but it not up to date
 		// with the desired managed resource state. This lets the managed
 		// resource reconciler know that it needs to call Update.
-		ResourceUpToDate: inline.Name == clusterName,
+		ResourceUpToDate: true,
 
 		// Return any details that may be required to connect to the external
 		// resource. These will be stored as the connection secret.
-		ConnectionDetails: connectionDetails,
+		ConnectionDetails: managed.ConnectionDetails{},
 	}, nil
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*v1alpha1.Cluster)
+	cr, ok := mg.(*v1alpha1.Client)
 	if !ok {
-		return managed.ExternalCreation{}, errors.New(errNotMyType)
+		return managed.ExternalCreation{}, errors.New(errNotclient)
 	}
 
-	newClusterConfiguration := console.CreateClusterBody{
-		Name:         cr.GetName(),
-		PlanTypeId:   cr.Spec.ForProvider.PlanType,
-		ChannelId:    cr.Spec.ForProvider.Channel,
-		GenerationId: cr.Spec.ForProvider.Generation,
-		RegionId:     cr.Spec.ForProvider.Region,
-	}
-	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
-	inline, _, err := c.service.APIClient.ClustersApi.CreateCluster(ctx).
-		CreateClusterBody(newClusterConfiguration).
-		Execute()
-
-	if err != nil {
-		fmt.Println("the error", string(err.(*console.GenericOpenAPIError).Body()))
-		return managed.ExternalCreation{}, err
-	}
-
-	meta.SetExternalName(cr, inline.GetClusterId())
+	fmt.Printf("Creating: %+v", cr)
 
 	return managed.ExternalCreation{
 		// Optionally return any details that may be required to connect to the
@@ -218,9 +166,9 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*v1alpha1.Cluster)
+	cr, ok := mg.(*v1alpha1.Client)
 	if !ok {
-		return managed.ExternalUpdate{}, errors.New(errNotMyType)
+		return managed.ExternalUpdate{}, errors.New(errNotclient)
 	}
 
 	fmt.Printf("Updating: %+v", cr)
@@ -233,20 +181,12 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
-	cr, ok := mg.(*v1alpha1.Cluster)
+	cr, ok := mg.(*v1alpha1.Client)
 	if !ok {
-		return errors.New(errNotMyType)
+		return errors.New(errNotclient)
 	}
 
 	fmt.Printf("Deleting: %+v", cr)
-
-	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
-	resp, err := c.service.APIClient.ClustersApi.DeleteCluster(ctx, meta.GetExternalName(cr)).Execute()
-
-	if err != nil {
-		fmt.Println("the resp", resp)
-		fmt.Println("the error", string(err.(*console.GenericOpenAPIError).Body()))
-	}
 
 	return nil
 }
