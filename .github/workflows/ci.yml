@@ -10,9 +10,9 @@ on:
 
 env:
   # Common versions
-  GO_VERSION: '1.17'
-  GOLANGCI_VERSION: 'v1.31'
-  DOCKER_BUILDX_VERSION: 'v0.4.2'
+  GO_VERSION: '1.19'
+  GOLANGCI_VERSION: 'v1.48'
+  DOCKER_BUILDX_VERSION: 'v0.9.1'
 
   # Common users. We can't run a step 'if secrets.AWS_USR != ""' but we can run
   # a step 'if env.AWS_USR' != ""', so we copy these to succinctly test whether
@@ -43,12 +43,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -57,14 +57,14 @@ jobs:
         run: echo "::set-output name=cache::$(make go.cachedir)"
 
       - name: Cache the Go Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.go.outputs.cache }}
           key: ${{ runner.os }}-build-lint-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-build-lint-
 
       - name: Cache Go Dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .work/pkg
           key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
@@ -77,10 +77,9 @@ jobs:
       # this action because it leaves 'annotations' (i.e. it comments on PRs to
       # point out linter violations).
       - name: Lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3
         with:
           version: ${{ env.GOLANGCI_VERSION }}
-          skip-go-installation: true
 
   check-diff:
     runs-on: ubuntu-18.04
@@ -89,12 +88,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -103,7 +102,7 @@ jobs:
         run: echo "::set-output name=cache::$(make go.cachedir)"
 
       - name: Cache the Go Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.go.outputs.cache }}
           key: ${{ runner.os }}-build-check-diff-${{ hashFiles('**/go.sum') }}
@@ -129,7 +128,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
@@ -137,7 +136,7 @@ jobs:
         run: git fetch --prune --unshallow
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -146,14 +145,14 @@ jobs:
         run: echo "::set-output name=cache::$(make go.cachedir)"
 
       - name: Cache the Go Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.go.outputs.cache }}
           key: ${{ runner.os }}-build-unit-tests-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-build-unit-tests-
 
       - name: Cache Go Dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .work/pkg
           key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
@@ -183,13 +182,13 @@ jobs:
           platforms: all
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
         with:
           version: ${{ env.DOCKER_BUILDX_VERSION }}
           install: true
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
@@ -197,7 +196,7 @@ jobs:
         run: git fetch --prune --unshallow
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -206,14 +205,14 @@ jobs:
         run: echo "::set-output name=cache::$(make go.cachedir)"
 
       - name: Cache the Go Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.go.outputs.cache }}
           key: ${{ runner.os }}-build-e2e-tests-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-build-e2e-tests-
 
       - name: Cache Go Dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .work/pkg
           key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
@@ -240,18 +239,16 @@ jobs:
 
     steps:
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v1
-        with:
-          platforms: all
+        uses: docker/setup-qemu-action@v2
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
         with:
           version: ${{ env.DOCKER_BUILDX_VERSION }}
           install: true
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
 
@@ -259,7 +256,7 @@ jobs:
         run: git fetch --prune --unshallow
 
       - name: Setup Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.GO_VERSION }}
 
@@ -268,14 +265,14 @@ jobs:
         run: echo "::set-output name=cache::$(make go.cachedir)"
 
       - name: Cache the Go Build Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.go.outputs.cache }}
           key: ${{ runner.os }}-build-publish-artifacts-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-build-publish-artifacts-
 
       - name: Cache Go Dependencies
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .work/pkg
           key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
@@ -292,13 +289,13 @@ jobs:
           BUILD_ARGS: "--load"
 
       - name: Publish Artifacts to GitHub
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: output
           path: _output/**
 
       - name: Login to Docker
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         if: env.DOCKER_USR != ''
         with:
           username: ${{ secrets.DOCKER_USR }}
