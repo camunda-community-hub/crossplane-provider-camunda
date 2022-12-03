@@ -18,6 +18,7 @@ package controller
 
 import (
 	"github.com/crossplane/crossplane-runtime/pkg/controller"
+	"github.com/crossplane/provider-camunda/internal/controller/client"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/crossplane/provider-camunda/internal/controller/cluster"
@@ -30,6 +31,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{
 		config.Setup,
 		cluster.Setup,
+		client.Setup,
 	} {
 		if err := setup(mgr, o); err != nil {
 			return err

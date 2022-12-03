@@ -20,7 +20,10 @@ import (
 	"context"
 	"fmt"
 
+	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/pkg/meta"
 	"github.com/pkg/errors"
+	console "github.com/sijoma/console-customer-api-go"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -130,8 +133,28 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotclient)
 	}
 
-	// These fmt statements should be removed in the real implementation.
-	fmt.Printf("Observing: %+v", cr)
+	clientName := cr.GetName()
+	clientId := meta.GetExternalName(cr)
+	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
+	inline, _, err := c.service.APIClient.ClientsApi.
+		GetClient(ctx, cr.Spec.ForProvider.ClusterID, clientId).
+		Execute()
+	if err != nil {
+		return managed.ExternalObservation{
+			ResourceExists:   false,
+			ResourceUpToDate: false,
+		}, nil
+	}
+	connectionDetails := managed.ConnectionDetails{}
+	if inline.GetName() == clientName {
+		cr.Status.SetConditions(xpv1.Available())
+	} else {
+		cr.Status.SetConditions(xpv1.Unavailable())
+	}
+
+	connectionDetails["ZEEBE_CLIENT_ID"] = []byte(inline.ZEEBE_CLIENT_ID)
+	connectionDetails["ZEEBE_ADDRESS"] = []byte(inline.ZEEBE_ADDRESS)
+	connectionDetails["ZEEBE_AUTHORIZATION_SERVER_URL"] = []byte(inline.ZEEBE_AUTHORIZATION_SERVER_URL)
 
 	return managed.ExternalObservation{
 		// Return false when the external resource does not exist. This lets
@@ -146,7 +169,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 		// Return any details that may be required to connect to the external
 		// resource. These will be stored as the connection secret.
-		ConnectionDetails: managed.ConnectionDetails{},
+		ConnectionDetails: connectionDetails,
 	}, nil
 }
 
@@ -156,12 +179,30 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		return managed.ExternalCreation{}, errors.New(errNotclient)
 	}
 
-	fmt.Printf("Creating: %+v", cr)
+	clientName := cr.GetName()
+
+	newClientConfiguration := console.CreateClusterClientBody{
+		ClientName: clientName,
+	}
+
+	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
+	inline, _, err := c.service.APIClient.ClientsApi.CreateClient(ctx, cr.Spec.ForProvider.ClusterID).
+		CreateClusterClientBody(newClientConfiguration).
+		Execute()
+	if err != nil {
+		fmt.Println("the error on client creation", string(err.(*console.GenericOpenAPIError).Body()))
+		return managed.ExternalCreation{}, err
+	}
+
+	meta.SetExternalName(cr, inline.ClientId)
 
 	return managed.ExternalCreation{
 		// Optionally return any details that may be required to connect to the
 		// external resource. These will be stored as the connection secret.
-		ConnectionDetails: managed.ConnectionDetails{},
+		ConnectionDetails: managed.ConnectionDetails{
+			"client_id":     []byte(inline.ClientId),
+			"client_secret": []byte(inline.ClientSecret),
+		},
 	}, nil
 }
 
@@ -187,6 +228,15 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
 	}
 
 	fmt.Printf("Deleting: %+v", cr)
+
+	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
+	resp, err := c.service.APIClient.ClientsApi.DeleteClient(ctx, cr.Spec.ForProvider.ClusterID, meta.GetExternalName(cr)).
+		Execute()
+	if err != nil {
+		fmt.Println("the resp", resp)
+		fmt.Println("the error on client deletion", string(err.(*console.GenericOpenAPIError).Body()))
+		return err
+	}
 
 	return nil
 }

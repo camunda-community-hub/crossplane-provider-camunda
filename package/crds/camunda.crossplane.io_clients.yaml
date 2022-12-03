@@ -63,6 +63,11 @@ spec:
                 type: string
               forProvider:
                 description: ClientParameters are the configurable fields of a client.
+                properties:
+                  clusterID:
+                    type: string
+                required:
+                - clusterID
                 type: object
               providerConfigRef:
                 default:

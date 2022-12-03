@@ -26,7 +26,9 @@ import (
 )
 
 // ClientParameters are the configurable fields of a client.
-type ClientParameters struct{}
+type ClientParameters struct {
+	ClusterID string `json:"clusterID"`
+}
 
 // ClientObservation are the observable fields of a client.
 type ClientObservation struct {

@@ -1,0 +1,12 @@
+apiVersion: camunda.crossplane.io/v1alpha1
+kind: Client
+metadata:
+  name: my-camunda-zeebe-client
+spec:
+  forProvider:
+    clusterID: 2611e047-74ab-47ba-aae4-115be2918fbe
+  writeConnectionSecretToRef:
+    name: my-client-details
+    namespace: default
+  providerConfigRef:
+    name: example
