@@ -32,7 +32,9 @@ type ClientParameters struct {
 
 // ClientObservation are the observable fields of a client.
 type ClientObservation struct {
-	ObservableField string `json:"observableField,omitempty"`
+	ZeebeClientID               string `json:"zeebeClientID,omitempty"`
+	ZeebeAddress                string `json:"zeebeAddress,omitempty"`
+	ZeebeAuthorizationServerUrl string `json:"zeebeAuthorizationServerUrl,omitempty"`
 }
 
 // A ClientSpec defines the desired state of a client.

@@ -162,10 +162,15 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	connectionDetails := managed.ConnectionDetails{}
 	// TODO: Proper check of all nil-pointers
 	if inline.Links.Operate != nil {
-		connectionDetails["operate"] = []byte(*inline.Links.Operate)
-		connectionDetails["optimize"] = []byte(*inline.Links.Optimize)
-		connectionDetails["tasklist"] = []byte(*inline.Links.Tasklist)
-		connectionDetails["zeebe"] = []byte(*inline.Links.Zeebe)
+		connectionDetails["operate"] = []byte(inline.Links.GetOperate())
+		connectionDetails["optimize"] = []byte(inline.Links.GetOptimize())
+		connectionDetails["tasklist"] = []byte(inline.Links.GetTasklist())
+		connectionDetails["zeebe"] = []byte(inline.Links.GetZeebe())
+
+		cr.Status.AtProvider.Operate = inline.Links.GetOperate()
+		cr.Status.AtProvider.Optimize = inline.Links.GetOptimize()
+		cr.Status.AtProvider.Tasklist = inline.Links.GetTasklist()
+		cr.Status.AtProvider.Zeebe = inline.Links.GetZeebe()
 	}
 
 	return managed.ExternalObservation{

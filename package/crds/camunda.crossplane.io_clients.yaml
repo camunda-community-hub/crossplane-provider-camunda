@@ -246,7 +246,11 @@ spec:
               atProvider:
                 description: ClientObservation are the observable fields of a client.
                 properties:
-                  observableField:
+                  zeebeAddress:
+                    type: string
+                  zeebeAuthorizationServerUrl:
+                    type: string
+                  zeebeClientID:
                     type: string
                 type: object
               conditions:

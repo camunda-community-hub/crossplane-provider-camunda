@@ -255,7 +255,13 @@ spec:
               atProvider:
                 description: ClusterObservation are the observable fields of a Cluster.
                 properties:
-                  observableField:
+                  operate:
+                    type: string
+                  optimize:
+                    type: string
+                  tasklist:
+                    type: string
+                  zeebe:
                     type: string
                 type: object
               conditions:

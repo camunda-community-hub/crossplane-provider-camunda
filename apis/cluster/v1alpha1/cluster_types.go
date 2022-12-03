@@ -34,7 +34,10 @@ type ClusterParameters struct {
 
 // ClusterObservation are the observable fields of a Cluster.
 type ClusterObservation struct {
-	ObservableField string `json:"observableField,omitempty"`
+	Operate  string `json:"operate,omitempty"`
+	Optimize string `json:"optimize,omitempty"`
+	Tasklist string `json:"tasklist,omitempty"`
+	Zeebe    string `json:"zeebe,omitempty"`
 }
 
 // A ClusterSpec defines the desired state of a Cluster.

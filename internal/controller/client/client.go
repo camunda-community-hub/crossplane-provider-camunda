@@ -155,6 +155,9 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	connectionDetails["ZEEBE_CLIENT_ID"] = []byte(inline.ZEEBE_CLIENT_ID)
 	connectionDetails["ZEEBE_ADDRESS"] = []byte(inline.ZEEBE_ADDRESS)
 	connectionDetails["ZEEBE_AUTHORIZATION_SERVER_URL"] = []byte(inline.ZEEBE_AUTHORIZATION_SERVER_URL)
+	cr.Status.AtProvider.ZeebeClientID = inline.ZEEBE_CLIENT_ID
+	cr.Status.AtProvider.ZeebeAddress = inline.ZEEBE_ADDRESS
+	cr.Status.AtProvider.ZeebeAuthorizationServerUrl = inline.ZEEBE_AUTHORIZATION_SERVER_URL
 
 	return managed.ExternalObservation{
 		// Return false when the external resource does not exist. This lets
@@ -195,6 +198,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 
 	meta.SetExternalName(cr, inline.ClientId)
+
+	cr.Status.AtProvider.ZeebeClientID = inline.ClientId
 
 	return managed.ExternalCreation{
 		// Optionally return any details that may be required to connect to the
