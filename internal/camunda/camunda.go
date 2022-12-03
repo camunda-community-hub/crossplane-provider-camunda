@@ -10,6 +10,8 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
+const userAgent = "go/crossplane"
+
 // Service connects to Camunda Cloud
 type Service struct {
 	console.APIClient
@@ -55,6 +57,7 @@ func NewService(ctx context.Context, creds []byte) (*Service, error) {
 	cfg := console.NewConfiguration()
 	cfg.Scheme = "https"
 	cfg.Host = "api.cloud.camunda.io"
+	cfg.UserAgent = userAgent
 	client := console.NewAPIClient(cfg)
 	camundaService = &Service{APIClient: *client, AccessToken: token.AccessToken}
 	return camundaService, err
