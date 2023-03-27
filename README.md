@@ -8,7 +8,9 @@ A crossplane provider for Camunda Platform 8 SaaS. https://camunda.com/
 
 ## Creating the provider secret
 
+```bash
 echo '{ "client_id": "<your_client_id", "client_secret": "your_client_secret" }' | base64
+```
 
 ```yaml
 apiVersion: v1
