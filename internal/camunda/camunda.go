@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/url"
 
 	console "github.com/sijoma/console-customer-api-go"
@@ -31,7 +32,7 @@ func NewService(ctx context.Context, creds []byte) (*Service, error) {
 	if err := json.Unmarshal(creds, &camundaCreds); err != nil {
 		return nil, err
 	}
-	tokenUrl, ok := camundaCreds["tokenUrl"]
+	tokenUrl, ok := camundaCreds["token_url"]
 	if !ok {
 		tokenUrl = "https://login.cloud.camunda.io/oauth/token"
 	}
@@ -54,9 +55,11 @@ func NewService(ctx context.Context, creds []byte) (*Service, error) {
 		return nil, err
 	}
 
+	log.Printf("Authenticated against Camunda API. Audience %s, tokenUrl %s", audience, tokenUrl)
+
 	cfg := console.NewConfiguration()
 	cfg.Scheme = "https"
-	cfg.Host = "api.cloud.camunda.io"
+	cfg.Host = audience
 	cfg.UserAgent = userAgent
 	client := console.NewAPIClient(cfg)
 	camundaService = &Service{APIClient: *client, AccessToken: token.AccessToken}

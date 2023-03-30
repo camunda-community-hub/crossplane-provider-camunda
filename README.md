@@ -23,6 +23,22 @@ data:
   credentials: <your_base64_encoded_string>
 ```
 
+## Create the provider config
+
+```yaml
+apiVersion: camunda.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: example
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      key: credentials
+      name: example-provider-secret
+      namespace: crossplane-system
+```
+
 ## Limitation
 Currently, it is necessary to pass in the `uuid` for `channel`, `planType`, `generation` and `region` of a Camunda cluster. See example below. 
 
