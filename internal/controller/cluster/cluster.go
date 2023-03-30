@@ -18,10 +18,10 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	console "github.com/sijoma/console-customer-api-go"
 	"k8s.io/apimachinery/pkg/types"
@@ -126,6 +126,7 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
+	log, _ := logr.FromContext(ctx)
 	cr, ok := mg.(*v1alpha1.Cluster)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotMyType)
@@ -142,8 +143,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}, nil
 	}
 
-	fmt.Println("cluster status", inline.Status)
-	fmt.Println("cluster links", inline.Links)
+	log.Info("observed-cluster", "cluster-status", inline.Status, "cluster-links", inline.Links)
 
 	if inline.Status.ZeebeStatus != nil {
 		switch *inline.Status.ZeebeStatus {
@@ -191,6 +191,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
+	log, _ := logr.FromContext(ctx)
 	cr, ok := mg.(*v1alpha1.Cluster)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotMyType)
@@ -209,7 +210,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		Execute()
 
 	if err != nil {
-		fmt.Println("the error", string(err.(*console.GenericOpenAPIError).Body()))
+		log.Error(err, "cluster creation failed")
 		return managed.ExternalCreation{}, err
 	}
 
@@ -223,12 +224,13 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
+	log, _ := logr.FromContext(ctx)
 	cr, ok := mg.(*v1alpha1.Cluster)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotMyType)
 	}
 
-	fmt.Printf("Updating: %+v", cr)
+	log.Info("Updating cluster", "custom-resource", cr)
 
 	return managed.ExternalUpdate{
 		// Optionally return any details that may be required to connect to the
@@ -238,19 +240,20 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
+	log, _ := logr.FromContext(ctx)
 	cr, ok := mg.(*v1alpha1.Cluster)
 	if !ok {
 		return errors.New(errNotMyType)
 	}
 
-	fmt.Printf("Deleting: %+v", cr)
+	log.Info("Deleting cluster", "custom-resource", cr)
 
 	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
 	resp, err := c.service.APIClient.ClustersApi.DeleteCluster(ctx, meta.GetExternalName(cr)).Execute()
 
 	if err != nil {
-		fmt.Println("the resp", resp)
-		fmt.Println("the error", string(err.(*console.GenericOpenAPIError).Body()))
+		log.Info("cluster delete response", "response", resp)
+		log.Error(err, "cluster delete error")
 	}
 
 	return nil

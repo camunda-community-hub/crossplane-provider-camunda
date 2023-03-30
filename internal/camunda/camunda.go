@@ -3,10 +3,9 @@ package camunda
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/url"
 
+	"github.com/go-logr/logr"
 	console "github.com/sijoma/console-customer-api-go"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -23,6 +22,7 @@ var camundaService *Service
 
 // NewService creates a Camunda service to connect to Camunda Cloud
 func NewService(ctx context.Context, creds []byte) (*Service, error) {
+	log, _ := logr.FromContext(ctx)
 	// Singleton to not refetch access token all the time
 	// ToDo: This probably causes issues when the token is expired
 	if camundaService != nil {
@@ -51,11 +51,11 @@ func NewService(ctx context.Context, creds []byte) (*Service, error) {
 	}
 	token, err := config.Token(ctx)
 	if err != nil {
-		fmt.Println("unable to fetch token" + err.Error())
+		log.Error(err, "unable to fetch token for camunda provider")
 		return nil, err
 	}
 
-	log.Printf("Authenticated against Camunda API. Audience %s, tokenUrl %s", audience, tokenUrl)
+	log.Info("Authenticated against Camunda API", "audience", audience, "tokenUrl", tokenUrl)
 
 	cfg := console.NewConfiguration()
 	cfg.Scheme = "https"

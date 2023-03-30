@@ -18,10 +18,10 @@ package client
 
 import (
 	"context"
-	"fmt"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	console "github.com/sijoma/console-customer-api-go"
 	"k8s.io/apimachinery/pkg/types"
@@ -177,6 +177,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
+	log, _ := logr.FromContext(ctx)
 	cr, ok := mg.(*v1alpha1.Client)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotclient)
@@ -193,7 +194,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		CreateClusterClientBody(newClientConfiguration).
 		Execute()
 	if err != nil {
-		fmt.Println("the error on client creation", string(err.(*console.GenericOpenAPIError).Body()))
+		log.Error(err, "client-creation")
 		return managed.ExternalCreation{}, err
 	}
 
@@ -212,12 +213,13 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
+	log, _ := logr.FromContext(ctx)
 	cr, ok := mg.(*v1alpha1.Client)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotclient)
 	}
 
-	fmt.Printf("Updating: %+v", cr)
+	log.Info("Updating Client", "client-custom-resource", cr)
 
 	return managed.ExternalUpdate{
 		// Optionally return any details that may be required to connect to the
@@ -227,19 +229,20 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
+	log, _ := logr.FromContext(ctx)
 	cr, ok := mg.(*v1alpha1.Client)
 	if !ok {
 		return errors.New(errNotclient)
 	}
 
-	fmt.Printf("Deleting: %+v", cr)
+	log.Info("Deleting client", "custom-resource", cr)
 
 	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
 	resp, err := c.service.APIClient.ClientsApi.DeleteClient(ctx, cr.Spec.ForProvider.ClusterID, meta.GetExternalName(cr)).
 		Execute()
 	if err != nil {
-		fmt.Println("the resp", resp)
-		fmt.Println("the error on client deletion", string(err.(*console.GenericOpenAPIError).Body()))
+		log.Info("the response on client deletion", resp)
+		log.Error(err, "the error on client deletion")
 		return err
 	}
 
