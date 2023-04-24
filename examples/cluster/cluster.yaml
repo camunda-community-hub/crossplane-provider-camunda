@@ -5,9 +5,9 @@ metadata:
 spec:
   forProvider:
     channel: 6bdf0d1c-3d5a-4df6-8d03-762682964d85
-    generation: "d54fde93-275f-480d-a7b4-bc52435a447a"
-    planType: "231932af-0223-4b60-9961-fe4f71800760" # Trial Package
-    region: "2f6470f9-77ec-4be5-9cdc-3231caf683ec"  # Europe West
+    generation: 9a91e023-a3c0-4949-90c5-809ff06a4dfc # Zeebe 8.2.2
+    planType: 37b564b6-3ce8-4f98-a64e-96a64b38d06b # Trial Package
+    region: 67836c51-4b5a-462c-91ca-fcccd792007f  # Europe West
   writeConnectionSecretToRef:
     name: my-cluster-details
     namespace: default

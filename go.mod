@@ -5,6 +5,7 @@ go 1.19
 require (
 	github.com/crossplane/crossplane-runtime v0.19.2
 	github.com/crossplane/crossplane-tools v0.0.0-20230327091744-4236bf732aa5
+	github.com/go-logr/logr v1.2.3
 	github.com/google/go-cmp v0.5.9
 	github.com/pkg/errors v0.9.1
 	github.com/sijoma/console-customer-api-go v0.2.0
@@ -31,7 +32,6 @@ require (
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/zapr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
