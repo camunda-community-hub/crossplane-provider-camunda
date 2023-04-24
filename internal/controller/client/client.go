@@ -136,7 +136,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	clientName := cr.GetName()
 	clientId := meta.GetExternalName(cr)
 	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
-	inline, _, err := c.service.APIClient.ClientsApi.
+	inline, _, err := c.service.ClustersApi.
 		GetClient(ctx, cr.Spec.ForProvider.ClusterID, clientId).
 		Execute()
 	if err != nil {
@@ -190,7 +190,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	}
 
 	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
-	inline, _, err := c.service.APIClient.ClientsApi.CreateClient(ctx, cr.Spec.ForProvider.ClusterID).
+	inline, _, err := c.service.APIClient.ClustersApi.CreateClient(ctx, cr.Spec.ForProvider.ClusterID).
 		CreateClusterClientBody(newClientConfiguration).
 		Execute()
 	if err != nil {
@@ -238,7 +238,7 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) error {
 	log.Info("Deleting client", "custom-resource", cr)
 
 	ctx = context.WithValue(ctx, console.ContextAccessToken, c.service.AccessToken)
-	resp, err := c.service.APIClient.ClientsApi.DeleteClient(ctx, cr.Spec.ForProvider.ClusterID, meta.GetExternalName(cr)).
+	resp, err := c.service.ClustersApi.DeleteClient(ctx, cr.Spec.ForProvider.ClusterID, meta.GetExternalName(cr)).
 		Execute()
 	if err != nil {
 		log.Info("the response on client deletion", resp)

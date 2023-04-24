@@ -7,7 +7,7 @@ require (
 	github.com/crossplane/crossplane-tools v0.0.0-20230327091744-4236bf732aa5
 	github.com/google/go-cmp v0.5.9
 	github.com/pkg/errors v0.9.1
-	github.com/sijoma/console-customer-api-go v0.1.0
+	github.com/sijoma/console-customer-api-go v0.2.0
 	golang.org/x/oauth2 v0.2.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	k8s.io/apimachinery v0.26.1
