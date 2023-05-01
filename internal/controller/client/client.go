@@ -206,8 +206,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		// Optionally return any details that may be required to connect to the
 		// external resource. These will be stored as the connection secret.
 		ConnectionDetails: managed.ConnectionDetails{
-			"client_id":     []byte(inline.ClientId),
-			"client_secret": []byte(inline.ClientSecret),
+			"ZEEBE_CLIENT_ID":     []byte(inline.ClientId),
+			"ZEEBE_CLIENT_SECRET": []byte(inline.ClientSecret),
 		},
 	}, nil
 }
