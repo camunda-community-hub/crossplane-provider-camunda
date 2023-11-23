@@ -6,7 +6,7 @@ require (
 	github.com/crossplane/crossplane-runtime v0.19.2
 	github.com/crossplane/crossplane-tools v0.0.0-20230327091744-4236bf732aa5
 	github.com/go-logr/logr v1.2.3
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/sijoma/console-customer-api-go v0.2.0
 	golang.org/x/oauth2 v0.2.0
