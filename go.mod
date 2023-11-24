@@ -8,7 +8,7 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/google/go-cmp v0.5.9
 	github.com/pkg/errors v0.9.1
-	github.com/sijoma/console-customer-api-go v0.2.0
+	github.com/sijoma/console-customer-api-go v0.5.0
 	golang.org/x/oauth2 v0.2.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 	k8s.io/apimachinery v0.26.1
